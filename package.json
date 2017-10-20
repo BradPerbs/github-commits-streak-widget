@@ -1,0 +1,24 @@
+{
+  "name": "github-streak-counter",
+  "version": "1.0.0",
+  "description": "count consecutive days of github commits",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LukeSchlangen/github-streak-counter.git"
+  },
+  "author": "Luke Schlangen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LukeSchlangen/github-streak-counter/issues"
+  },
+  "homepage": "https://github.com/LukeSchlangen/github-streak-counter#readme",
+  "dependencies": {
+    "express": "^4.16.2",
+    "moment": "^2.19.1",
+    "request": "^2.83.0"
+  }
+}
