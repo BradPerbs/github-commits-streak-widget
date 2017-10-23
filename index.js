@@ -1,37 +1,51 @@
 const express = require('express');
 const request = require('request');
 const moment = require('moment');
+require('dotenv').config();
 
 const app = express();
 
 const port = 5000;
 
-var options = {
-    url: 'https://api.github.com/search/commits?q=author:km-poonacha+author-date:2017-08-28',
-    headers: {
-        'User-Agent': 'request',
-        'Accept': 'application/vnd.github.cloak-preview'
-    }
-};
-
 app.get('/streak/:user', async function (req, res) {
     const yesterdaysDate = moment().subtract(1, 'day').format('YYYY-MM-DD');
-    const streakCountTotal = await checkUserCommitForDate(req.params.user, yesterdaysDate);
-    res.send({ streakCountTotal });
+    try {
+        const streakCountTotal = await checkUserCommitForDate(req.params.user, yesterdaysDate);
+        res.send({ streakCountTotal });
+    } catch (error) {
+        console.log(error);
+        res.sendStatus(500);
+    }
+
 });
 
 async function checkUserCommitForDate(user, date) {
-    const options = {
+    const authorOptions = {
         url: `https://api.github.com/search/commits?q=author:${user}+author-date:${date}`,
         headers: {
             'User-Agent': 'request',
-            'Accept': 'application/vnd.github.cloak-preview'
+            'Accept': 'application/vnd.github.cloak-preview',
+            'Authorization': `token ${process.env.GITHUB_SECRET_ACCESS_TOKEN}`
+        }
+    };
+    const committerOptions = {
+        url: `https://api.github.com/search/commits?q=committer:${user}+committer-date:${date}`,
+        headers: {
+            'User-Agent': 'request',
+            'Accept': 'application/vnd.github.cloak-preview',
+            'Authorization': `token ${process.env.GITHUB_SECRET_ACCESS_TOKEN}`
         }
     };
 
-    const githubResponse = await promisify(request(options));
+    const githubAuthorResponse = await promisify(request)(authorOptions);
+    const githubCommitterResponse = await promisify(request)(committerOptions);
 
-    if (JSON.parse(githubResponse).total_count > 0) {
+    const githubAuthorCount = Number(JSON.parse(githubAuthorResponse.body).total_count);
+    const githubCommitterCount = Number(JSON.parse(githubCommitterResponse.body).total_count);
+
+    if (isNaN(githubAuthorCount) || isNaN(githubAuthorCount)) {
+        throw new Error('GitHub contribution count was not a number. Body of response was:', githubAuthorResponse.body);
+    } else if (githubAuthorCount + githubCommitterCount > 0) {
         const previousDaysDate = moment(date).subtract(1, 'day').format('YYYY-MM-DD');
         let streakCounter = await checkUserCommitForDate(user, previousDaysDate);
         streakCounter++;
@@ -46,7 +60,11 @@ function promisify(fn) {
     return function (...args) {
         return new Promise((resolve, reject) => {
             fn(...args, (err, result) => {
-                if (err) return reject(err);
+                if (err) {
+                    console.log('error', err);
+
+                    return reject(err);
+                }
                 resolve(result);
             });
         });
